@@ -1,0 +1,213 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ─────────────────────────────────────────
+  # Job 1: 빌드 + 아티팩트 패키징
+  # ─────────────────────────────────────────
+  build-and-package:
+    name: Build & Package
+    runs-on: ubuntu-latest
+    outputs:
+      sha_short: ${{ steps.sha.outputs.sha_short }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+
+      - uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
+            turbo-${{ runner.os }}-
+
+      - name: Get short SHA
+        id: sha
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build all packages (Turbo)
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+
+      # 모노레포 standalone 빌드 결과: apps/web/.next/standalone/apps/web/server.js
+      - name: Copy Next.js standalone assets
+        run: |
+          cp -r apps/web/.next/static \
+            apps/web/.next/standalone/apps/web/.next/static
+          cp -r apps/web/public \
+            apps/web/.next/standalone/apps/web/public
+
+      - name: Package API artifact
+        run: |
+          tar -czf /tmp/api.tar.gz \
+            apps/api/dist \
+            apps/api/package.json \
+            apps/api/package-lock.json \
+            packages/sdui-schema/dist \
+            ecosystem.production.js
+
+      - name: Package Web artifact
+        run: |
+          tar -czf /tmp/web.tar.gz \
+            apps/web/.next/standalone \
+            ecosystem.production.js
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deploy-artifacts-${{ steps.sha.outputs.sha_short }}
+          path: |
+            /tmp/api.tar.gz
+            /tmp/web.tar.gz
+          retention-days: 7
+
+  # ─────────────────────────────────────────
+  # Job 2: S3 업로드
+  # ─────────────────────────────────────────
+  upload-to-s3:
+    name: Upload to S3
+    runs-on: ubuntu-latest
+    needs: build-and-package
+    env:
+      SHA_SHORT: ${{ needs.build-and-package.outputs.sha_short }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: deploy-artifacts-${{ env.SHA_SHORT }}
+          path: /tmp
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Upload versioned artifacts
+        run: |
+          aws s3 cp /tmp/api.tar.gz \
+            s3://${{ secrets.S3_BUCKET_NAME }}/sdui/releases/${{ env.SHA_SHORT }}/api.tar.gz
+          aws s3 cp /tmp/web.tar.gz \
+            s3://${{ secrets.S3_BUCKET_NAME }}/sdui/releases/${{ env.SHA_SHORT }}/web.tar.gz
+
+      - name: Update latest pointer
+        run: |
+          aws s3 cp /tmp/api.tar.gz \
+            s3://${{ secrets.S3_BUCKET_NAME }}/sdui/latest/api.tar.gz
+          aws s3 cp /tmp/web.tar.gz \
+            s3://${{ secrets.S3_BUCKET_NAME }}/sdui/latest/web.tar.gz
+          echo "${{ env.SHA_SHORT }}" | \
+            aws s3 cp - s3://${{ secrets.S3_BUCKET_NAME }}/sdui/latest/CURRENT_SHA
+
+  # ─────────────────────────────────────────
+  # Job 3: EC2 배포
+  # ─────────────────────────────────────────
+  deploy-to-ec2:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs: [build-and-package, upload-to-s3]
+    env:
+      SHA_SHORT: ${{ needs.build-and-package.outputs.sha_short }}
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          envs: SHA_SHORT
+          command_timeout: 10m
+          script: |
+            set -euo pipefail
+            BUCKET="${{ secrets.S3_BUCKET_NAME }}"
+            DEPLOY="/home/ubuntu/sdui"
+            BACKUP="/home/ubuntu/sdui-backup"
+
+            echo "=== [1/5] 이전 배포본 백업 ==="
+            mkdir -p "${BACKUP}"
+            if [ -d "${DEPLOY}" ]; then
+              rm -rf "${BACKUP}/last"
+              cp -r "${DEPLOY}" "${BACKUP}/last"
+            fi
+
+            echo "=== [2/5] 배포 디렉토리 초기화 ==="
+            rm -rf "${DEPLOY}" && mkdir -p "${DEPLOY}"
+
+            echo "=== [3/5] S3에서 아티팩트 다운로드 ==="
+            aws s3 cp "s3://${BUCKET}/sdui/releases/${SHA_SHORT}/api.tar.gz" /tmp/api.tar.gz
+            aws s3 cp "s3://${BUCKET}/sdui/releases/${SHA_SHORT}/web.tar.gz" /tmp/web.tar.gz
+
+            echo "=== [4/5] 압축 해제 + API 의존성 설치 ==="
+            tar -xzf /tmp/api.tar.gz -C "${DEPLOY}"
+            tar -xzf /tmp/web.tar.gz -C "${DEPLOY}"
+            echo "${SHA_SHORT}" > "${DEPLOY}/DEPLOYED_SHA"
+            cd "${DEPLOY}/apps/api"
+            npm ci --omit=dev --ignore-scripts
+
+            echo "=== [5/5] PM2 무중단 재시작 (reload) ==="
+            cd "${DEPLOY}"
+            pm2 describe sdui-api > /dev/null 2>&1 \
+              && pm2 reload ecosystem.production.js --only sdui-api \
+              || pm2 start ecosystem.production.js --only sdui-api
+            pm2 describe sdui-web > /dev/null 2>&1 \
+              && pm2 reload ecosystem.production.js --only sdui-web \
+              || pm2 start ecosystem.production.js --only sdui-web
+            pm2 save
+            echo "=== 배포 완료: ${SHA_SHORT} ==="
+
+      - name: Health check
+        run: |
+          sleep 10
+          curl -fsS --retry 3 --retry-delay 5 \
+            http://${{ secrets.EC2_HOST }}/api/screens
+
+  # ─────────────────────────────────────────
+  # Job 4: 롤백 (deploy-to-ec2 실패 시 자동 실행)
+  # ─────────────────────────────────────────
+  rollback:
+    name: Rollback on Failure
+    runs-on: ubuntu-latest
+    needs: [build-and-package, deploy-to-ec2]
+    if: failure() && needs.deploy-to-ec2.result == 'failure'
+    steps:
+      - name: Rollback via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          command_timeout: 10m
+          script: |
+            set -euo pipefail
+            DEPLOY="/home/ubuntu/sdui"
+            BACKUP="/home/ubuntu/sdui-backup"
+
+            if [ -d "${BACKUP}/last" ]; then
+              rm -rf "${DEPLOY}"
+              cp -r "${BACKUP}/last" "${DEPLOY}"
+              cd "${DEPLOY}"
+              pm2 reload ecosystem.production.js --only sdui-api
+              pm2 reload ecosystem.production.js --only sdui-web
+              pm2 save
+              echo "롤백 완료 (이전 배포본 복원)"
+            else
+              echo "롤백 실패: 백업본 없음" && exit 1
+            fi
