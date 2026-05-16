@@ -1,6 +1,55 @@
 # EC2 배포 가이드
 
-## 사전 준비 (EC2 Ubuntu)
+## GitHub Actions 자동 배포 (준비 중)
+
+파이프라인 코드는 완성되어 있음 (커밋 `44bebf9`). 아래 세팅을 완료하면 `main` push 시 자동 배포된다.
+
+### 1. GitHub Secrets 등록
+
+저장소 → Settings → Secrets and variables → Actions → New repository secret
+
+| Secret | 설명 |
+|---|---|
+| `AWS_ACCESS_KEY_ID` | S3 업로드용 IAM 액세스 키 |
+| `AWS_SECRET_ACCESS_KEY` | 위와 쌍 |
+| `AWS_REGION` | 예: `ap-northeast-2` |
+| `S3_BUCKET_NAME` | 아티팩트 저장 버킷 이름 |
+| `EC2_HOST` | EC2 퍼블릭 IP 또는 도메인 |
+| `EC2_USER` | SSH 유저 (보통 `ubuntu`) |
+| `EC2_SSH_PRIVATE_KEY` | PEM 키 전체 내용 (`-----BEGIN ...` 포함) |
+| `NEXT_PUBLIC_API_URL` | `http://{EC2_IP}:3001` |
+
+### 2. IAM 설정 (AWS 콘솔)
+
+- **GitHub Actions용 IAM 유저**: `s3:PutObject`, `s3:GetObject` 권한 (해당 버킷만)
+- **EC2 IAM Instance Profile**: `s3:GetObject` 권한 → EC2 배포 스크립트가 자격증명 없이 S3 읽기 가능
+
+### 3. EC2 추가 세팅
+
+기존 사전 준비 외에 AWS CLI 설치 필요:
+
+```bash
+sudo apt-get install -y awscli
+mkdir -p /home/ubuntu/sdui /home/ubuntu/sdui-backup
+```
+
+### 배포 흐름
+
+```
+main push
+  → ci.yml  : lint + type-check + build + test
+  → deploy.yml
+      [build-and-package] → tar.gz 생성 (api / web 분리)
+      [upload-to-s3]      → s3://BUCKET/sdui/releases/{SHA}/
+      [deploy-to-ec2]     → SSH → S3 다운로드 → pm2 reload (zero-downtime)
+      [rollback]          → deploy 실패 시 이전 배포본 자동 복원
+```
+
+---
+
+## 수동 배포 (로컬에서 직접)
+
+## 사전 준비 (EC2 Ubuntu, 수동 배포용)
 
 ```bash
 # Node.js 20 설치
