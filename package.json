@@ -18,5 +18,8 @@
   "packageManager": "npm@10.9.2",
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "@rolldown/binding-darwin-arm64": "^1.0.1"
   }
 }
