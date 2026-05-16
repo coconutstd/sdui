@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Put } from '@nestjs/common';
 import { ScreensService } from './screens.service';
-import type { ScreenMeta, SDUIScreen } from './screens.service';
+import type { ScreenMeta } from './screens.service';
+import type { SDUIScreen } from '@sdui/schema';
 
 @Controller('screens')
 export class ScreensController {
