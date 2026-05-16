@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { SDUIRenderer } from '@/components/sdui/SDUIRenderer';
 import type { SDUIScreen } from '@sdui/schema';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
-export default function Home() {
+function HomeContent() {
   const searchParams = useSearchParams();
   const screenId = searchParams.get('screen') ?? 'home';
 
@@ -38,5 +38,13 @@ export default function Home() {
         {screen && <SDUIRenderer component={screen.root} />}
       </div>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<p className="text-sm text-gray-400 text-center">불러오는 중...</p>}>
+      <HomeContent />
+    </Suspense>
   );
 }
