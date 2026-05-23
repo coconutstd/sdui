@@ -175,9 +175,18 @@ jobs:
             echo "${SHA_SHORT}" > "${DEPLOY}/DEPLOYED_SHA"
 
             echo "=== [5/5] PM2 재시작 ==="
-            cd "${DEPLOY}"
             pm2 delete all 2>/dev/null || true
-            pm2 start ecosystem.production.js
+
+            pm2 start "${DEPLOY}/apps/api/dist/main.js" \
+              --name sdui-api \
+              --cwd "${DEPLOY}/apps/api" \
+              --env NODE_ENV=production,PORT=3001
+
+            pm2 start "${DEPLOY}/apps/web/.next/standalone/apps/web/server.js" \
+              --name sdui-web \
+              --cwd "${DEPLOY}/apps/web/.next/standalone" \
+              --env NODE_ENV=production,PORT=3000,HOSTNAME=0.0.0.0
+
             pm2 save
             echo "=== 배포 완료: ${SHA_SHORT} ==="
 
@@ -211,9 +220,15 @@ jobs:
             if [ -d "${BACKUP}/last" ]; then
               rm -rf "${DEPLOY}"
               cp -r "${BACKUP}/last" "${DEPLOY}"
-              cd "${DEPLOY}"
-              pm2 reload ecosystem.production.js --only sdui-api
-              pm2 reload ecosystem.production.js --only sdui-web
+              pm2 delete all 2>/dev/null || true
+              pm2 start "${DEPLOY}/apps/api/dist/main.js" \
+                --name sdui-api \
+                --cwd "${DEPLOY}/apps/api" \
+                --env NODE_ENV=production,PORT=3001
+              pm2 start "${DEPLOY}/apps/web/.next/standalone/apps/web/server.js" \
+                --name sdui-web \
+                --cwd "${DEPLOY}/apps/web/.next/standalone" \
+                --env NODE_ENV=production,PORT=3000,HOSTNAME=0.0.0.0
               pm2 save
               echo "롤백 완료 (이전 배포본 복원)"
             else
