@@ -183,9 +183,9 @@ jobs:
 
       - name: Health check
         run: |
-          sleep 10
-          curl -fsS --retry 3 --retry-delay 5 \
-            http://${{ secrets.EC2_HOST }}/api/screens
+          sleep 15
+          curl -fsS --retry 5 --retry-delay 5 \
+            http://${{ secrets.EC2_HOST }}:3001/screens
 
   # ─────────────────────────────────────────
   # Job 4: 롤백 (deploy-to-ec2 실패 시 자동 실행)
