@@ -177,24 +177,35 @@ jobs:
             echo "=== [5/5] PM2 재시작 ==="
             pm2 delete all 2>/dev/null || true
 
-            pm2 start "${DEPLOY}/apps/api/dist/main.js" \
+            NODE_ENV=production PORT=3001 pm2 start "${DEPLOY}/apps/api/dist/main.js" \
               --name sdui-api \
-              --cwd "${DEPLOY}/apps/api" \
-              --env NODE_ENV=production,PORT=3001
+              --cwd "${DEPLOY}/apps/api"
 
-            pm2 start "${DEPLOY}/apps/web/.next/standalone/apps/web/server.js" \
+            NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0 pm2 start "${DEPLOY}/apps/web/.next/standalone/apps/web/server.js" \
               --name sdui-web \
-              --cwd "${DEPLOY}/apps/web/.next/standalone" \
-              --env NODE_ENV=production,PORT=3000,HOSTNAME=0.0.0.0
+              --cwd "${DEPLOY}/apps/web/.next/standalone"
 
             pm2 save
             echo "=== 배포 완료: ${SHA_SHORT} ==="
 
       - name: Health check
-        run: |
-          sleep 15
-          curl -fsS --retry 5 --retry-delay 5 \
-            http://${{ secrets.EC2_HOST }}:3001/screens
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          command_timeout: 2m
+          script: |
+            for i in $(seq 1 10); do
+              if curl -fsS http://localhost:3001/screens; then
+                echo "헬스체크 성공"
+                exit 0
+              fi
+              echo "대기 중... ($i/10)"
+              sleep 5
+            done
+            echo "헬스체크 실패"
+            exit 1
 
   # ─────────────────────────────────────────
   # Job 4: 롤백 (deploy-to-ec2 실패 시 자동 실행)
