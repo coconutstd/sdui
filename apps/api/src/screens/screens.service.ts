@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import type { Component, SDUIScreen } from '@sdui/schema';
+import type { SDUIScreen } from '@sdui/schema';
 
 export interface ScreenMeta {
   id: string;
