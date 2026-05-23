@@ -171,14 +171,10 @@ jobs:
             tar -xzf /tmp/web.tar.gz -C "${DEPLOY}"
             echo "${SHA_SHORT}" > "${DEPLOY}/DEPLOYED_SHA"
 
-            echo "=== [5/5] PM2 무중단 재시작 (reload) ==="
+            echo "=== [5/5] PM2 재시작 ==="
             cd "${DEPLOY}"
-            pm2 describe sdui-api > /dev/null 2>&1 \
-              && pm2 reload ecosystem.production.js --only sdui-api \
-              || pm2 start ecosystem.production.js --only sdui-api
-            pm2 describe sdui-web > /dev/null 2>&1 \
-              && pm2 reload ecosystem.production.js --only sdui-web \
-              || pm2 start ecosystem.production.js --only sdui-web
+            pm2 delete all 2>/dev/null || true
+            pm2 start ecosystem.production.js
             pm2 save
             echo "=== 배포 완료: ${SHA_SHORT} ==="
 
