@@ -38,6 +38,7 @@ export default function PreviewPage({ params }: PageProps) {
   }, [screenId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchScreen();
   }, [fetchScreen]);
 

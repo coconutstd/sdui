@@ -65,7 +65,7 @@ jobs:
             delete pkg.dependencies['@sdui/schema'];
             fs.writeFileSync('apps/api/package.json', JSON.stringify(pkg, null, 2));
           "
-          cd apps/api && npm install --omit=dev --ignore-scripts
+          npm install --omit=dev --ignore-scripts --prefix apps/api
           mkdir -p apps/api/node_modules/@sdui/schema
           cp -r packages/sdui-schema/dist packages/sdui-schema/package.json \
             apps/api/node_modules/@sdui/schema/
