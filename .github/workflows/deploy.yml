@@ -58,14 +58,23 @@ jobs:
             apps/web/.next/standalone/apps/web/public
 
       - name: Install API production dependencies
-        run: cd apps/api && npm install --omit=dev --ignore-scripts
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('apps/api/package.json', 'utf8'));
+            delete pkg.dependencies['@sdui/schema'];
+            fs.writeFileSync('apps/api/package.json', JSON.stringify(pkg, null, 2));
+          "
+          cd apps/api && npm install --omit=dev --ignore-scripts
+          mkdir -p apps/api/node_modules/@sdui/schema
+          cp -r packages/sdui-schema/dist packages/sdui-schema/package.json \
+            apps/api/node_modules/@sdui/schema/
 
       - name: Package API artifact
         run: |
           tar -czf /tmp/api.tar.gz \
             apps/api/dist \
             apps/api/node_modules \
-            apps/api/package.json \
             ecosystem.production.js
 
       - name: Package Web artifact
