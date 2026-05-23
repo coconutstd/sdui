@@ -19,7 +19,4 @@
   "engines": {
     "node": ">=20"
   },
-  "dependencies": {
-    "@rolldown/binding-darwin-arm64": "^1.0.1"
-  }
 }
