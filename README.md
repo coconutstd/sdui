@@ -75,6 +75,12 @@ NestJS (ScreensService, 인메모리)
 
 비주얼 에디터로 스크린을 실시간 편집하고 서버에 저장할 수 있다.
 
+**스크린 목록**
+![Admin 스크린 목록](docs/screenshots/admin-list.png)
+
+**비주얼 에디터**
+![Admin 비주얼 에디터](docs/screenshots/admin-editor.png)
+
 - **구조 탭** — 컴포넌트 트리 탐색 및 순서 변경
 - **+ 추가 탭** — 팔레트에서 컴포넌트 드래그 없이 추가
 - **속성 패널** — 선택한 컴포넌트의 props 편집
