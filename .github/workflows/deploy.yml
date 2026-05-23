@@ -57,12 +57,15 @@ jobs:
           cp -r apps/web/public \
             apps/web/.next/standalone/apps/web/public
 
+      - name: Install API production dependencies
+        run: cd apps/api && npm install --omit=dev --ignore-scripts
+
       - name: Package API artifact
         run: |
           tar -czf /tmp/api.tar.gz \
             apps/api/dist \
+            apps/api/node_modules \
             apps/api/package.json \
-            packages/sdui-schema/dist \
             ecosystem.production.js
 
       - name: Package Web artifact
@@ -154,12 +157,10 @@ jobs:
             aws s3 cp "s3://${BUCKET}/sdui/releases/${SHA_SHORT}/api.tar.gz" /tmp/api.tar.gz
             aws s3 cp "s3://${BUCKET}/sdui/releases/${SHA_SHORT}/web.tar.gz" /tmp/web.tar.gz
 
-            echo "=== [4/5] 압축 해제 + API 의존성 설치 ==="
+            echo "=== [4/5] 압축 해제 ==="
             tar -xzf /tmp/api.tar.gz -C "${DEPLOY}"
             tar -xzf /tmp/web.tar.gz -C "${DEPLOY}"
             echo "${SHA_SHORT}" > "${DEPLOY}/DEPLOYED_SHA"
-            cd "${DEPLOY}/apps/api"
-            npm install --omit=dev --ignore-scripts
 
             echo "=== [5/5] PM2 무중단 재시작 (reload) ==="
             cd "${DEPLOY}"
