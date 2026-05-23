@@ -62,7 +62,6 @@ jobs:
           tar -czf /tmp/api.tar.gz \
             apps/api/dist \
             apps/api/package.json \
-            apps/api/package-lock.json \
             packages/sdui-schema/dist \
             ecosystem.production.js
 
@@ -160,7 +159,7 @@ jobs:
             tar -xzf /tmp/web.tar.gz -C "${DEPLOY}"
             echo "${SHA_SHORT}" > "${DEPLOY}/DEPLOYED_SHA"
             cd "${DEPLOY}/apps/api"
-            npm ci --omit=dev --ignore-scripts
+            npm install --omit=dev --ignore-scripts
 
             echo "=== [5/5] PM2 무중단 재시작 (reload) ==="
             cd "${DEPLOY}"
