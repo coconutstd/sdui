@@ -38,7 +38,7 @@ export function PropertiesPanel({ component, path, onUpdate }: Props) {
         <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
           {TYPE_LABELS[component.type] ?? component.type}
         </span>
-        <span className="text-xs text-gray-300 font-mono truncate">{component.id}</span>
+        <span className="text-xs text-gray-500 font-mono truncate">{component.id}</span>
       </div>
 
       {component.type === 'text' && (

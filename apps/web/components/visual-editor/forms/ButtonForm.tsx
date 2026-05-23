@@ -34,7 +34,7 @@ export function ButtonForm({ component, onUpdate }: Props) {
           type="text"
           value={label}
           onChange={(e) => updateProps({ label: e.target.value })}
-          className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full border border-gray-200 rounded-lg p-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="버튼 텍스트"
         />
       </div>
@@ -66,7 +66,7 @@ export function ButtonForm({ component, onUpdate }: Props) {
             const newType = e.target.value as Action['type'];
             updateProps({ action: DEFAULT_ACTIONS[newType] });
           }}
-          className="w-full border border-gray-200 rounded-lg p-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full border border-gray-200 rounded-lg p-2.5 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
           <option value="navigate">페이지 이동 (navigate)</option>
           <option value="deeplink">딥링크 (deeplink)</option>
@@ -83,7 +83,7 @@ export function ButtonForm({ component, onUpdate }: Props) {
             onChange={(e) =>
               updateProps({ action: { type: 'navigate', url: e.target.value } })
             }
-            className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full border border-gray-200 rounded-lg p-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="/path/to/page"
           />
         </div>
@@ -98,7 +98,7 @@ export function ButtonForm({ component, onUpdate }: Props) {
             onChange={(e) =>
               updateProps({ action: { type: 'deeplink', path: e.target.value } })
             }
-            className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full border border-gray-200 rounded-lg p-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="/screen/name"
           />
         </div>
@@ -116,7 +116,7 @@ export function ButtonForm({ component, onUpdate }: Props) {
                   action: { type: 'api_call', endpoint: e.target.value, method: action.method },
                 })
               }
-              className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-200 rounded-lg p-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="/api/endpoint"
             />
           </div>

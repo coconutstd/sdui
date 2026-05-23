@@ -20,7 +20,7 @@ export function ImageForm({ component, onUpdate }: Props) {
           type="text"
           value={component.props.src}
           onChange={(e) => update({ src: e.target.value })}
-          className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full border border-gray-200 rounded-lg p-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="https://example.com/image.png"
         />
         {component.props.src && (
@@ -41,7 +41,7 @@ export function ImageForm({ component, onUpdate }: Props) {
           type="text"
           value={component.props.alt}
           onChange={(e) => update({ alt: e.target.value })}
-          className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full border border-gray-200 rounded-lg p-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="이미지 설명"
         />
       </div>
@@ -55,7 +55,7 @@ export function ImageForm({ component, onUpdate }: Props) {
             onChange={(e) =>
               update({ width: e.target.value ? Number(e.target.value) : undefined })
             }
-            className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full border border-gray-200 rounded-lg p-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="자동"
             min={0}
           />
@@ -68,7 +68,7 @@ export function ImageForm({ component, onUpdate }: Props) {
             onChange={(e) =>
               update({ height: e.target.value ? Number(e.target.value) : undefined })
             }
-            className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full border border-gray-200 rounded-lg p-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="자동"
             min={0}
           />

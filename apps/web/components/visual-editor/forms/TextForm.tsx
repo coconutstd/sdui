@@ -24,7 +24,7 @@ export function TextForm({ component, onUpdate }: Props) {
               props: { ...(c as TextComponent).props, content: e.target.value },
             }) as Component)
           }
-          className="w-full border border-gray-200 rounded-lg p-2.5 text-sm resize-none h-24 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full border border-gray-200 rounded-lg p-2.5 text-sm text-gray-900 resize-none h-24 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="텍스트를 입력하세요"
         />
       </div>
